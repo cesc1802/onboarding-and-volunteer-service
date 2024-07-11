@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 
+	"fmt"
+
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature"
 	"github.com/cesc1802/share-module/config"
 	"github.com/cesc1802/share-module/system"
@@ -24,6 +26,7 @@ var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Starting HTTP server",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("Hello World")
 
 		cfg, err := config.LoadAppConfig(".")
 		if err != nil {

@@ -23,4 +23,5 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("application cannot start %v", err)
 	}
+
 }
