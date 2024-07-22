@@ -1369,10 +1369,6 @@ const docTemplate = `{
         },
         "dto.CountryUpdateDTO": {
             "type": "object",
-            "required": [
-                "name",
-                "status"
-            ],
             "properties": {
                 "name": {
                     "type": "string"

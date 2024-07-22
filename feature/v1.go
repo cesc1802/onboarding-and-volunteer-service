@@ -112,7 +112,7 @@ func RegisterHandlerV1(mono system.Service) {
 	{
 		volunteer.POST("/", volunteerHandler.CreateVolunteer)
 		volunteer.PUT("/:id", volunteerHandler.UpdateVolunteer)
-		volunteer.DELETE("/:id",volunteerHandler.DeleteVolunteer)
+		volunteer.DELETE("/:id", volunteerHandler.DeleteVolunteer)
 		volunteer.GET("/:id", volunteerHandler.FindVolunteerByID)
 	}
 

@@ -169,9 +169,6 @@ definitions:
         type: string
       status:
         type: integer
-    required:
-    - name
-    - status
     type: object
   dto.CreateUserIdentityRequest:
     properties:
