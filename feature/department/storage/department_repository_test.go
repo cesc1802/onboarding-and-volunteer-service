@@ -42,7 +42,9 @@ func TestCreateDepartment(t *testing.T) {
 
 	// Set expectations for SQL execution: inserting a new department record.
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `departments`").WithArgs(department.Name, department.Address, department.Status).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO `departments`").
+		WithArgs(department.Name, department.Address, department.Status).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	// Call the Create method and assert no errors.
@@ -67,7 +69,9 @@ func TestGetDepartmentByID(t *testing.T) {
 	rows := sqlmock.NewRows([]string{"id", "name", "address", "status"}).
 		AddRow(department.Id, department.Name, department.Address, department.Status)
 
-	mock.ExpectQuery("SELECT * FROM `departments` WHERE `departments`.`id` = ?").WithArgs(department.Id).WillReturnRows(rows)
+	mock.ExpectQuery("SELECT * FROM `departments` WHERE `departments`.`id` = ?").
+		WithArgs(department.Id).
+		WillReturnRows(rows)
 
 	// Call the GetByID method and assert the returned data matches expectations.
 	result, err := repo.GetByID(department.Id)
@@ -93,7 +97,9 @@ func TestUpdateDepartment(t *testing.T) {
 	}
 	// Set expectations for SQL execution: updating a department record.
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE `departments` SET `name`=?,`address`=?,`status`=? WHERE `id` = ?").WithArgs(department.Name, department.Address, department.Status, department.Id).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE `departments` SET `name`=?,`address`=?,`status`=? WHERE `id` = ?").
+		WithArgs(department.Name, department.Address, department.Status, department.Id).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // Expecting one row to be affected.
 	mock.ExpectCommit()
 
 	// Call the Update method and assert no errors.
@@ -112,7 +118,9 @@ func TestDeleteDepartment(t *testing.T) {
 
 	// Set expectations for SQL execution: deleting a department record.
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM `departments` WHERE `departments`.`id` = ?").WithArgs(departmentID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM `departments` WHERE `departments`.`id` = ?").
+		WithArgs(departmentID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	// Call the Delete method and assert no errors.
