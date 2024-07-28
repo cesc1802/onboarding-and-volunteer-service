@@ -39,9 +39,10 @@ func (m *MockDepartmentRepository) Delete(id uint) error {
 	return args.Error(0)
 }
 
+// TestCreateDepartment tests the CreateDepartment method in the use case.
 func TestCreateDepartment(t *testing.T) {
-	mockRepo := new(MockDepartmentRepository)
-	usecase := NewDepartmentUsecase(mockRepo)
+	mockRepo := new(MockDepartmentRepository) // Create a new mock repository.
+	usecase := NewDepartmentUsecase(mockRepo) // Create a new use case with the mock repository.
 
 	input := dto.DepartmentCreateDTO{
 		Name:    "HR",
@@ -55,13 +56,14 @@ func TestCreateDepartment(t *testing.T) {
 		Status:  input.Status,
 	}
 
-	mockRepo.On("Create", expectedDepartment).Return(nil)
+	mockRepo.On("Create", expectedDepartment).Return(nil) // Set expectation on the mock.
 
-	err := usecase.CreateDepartment(input)
-	assert.NoError(t, err)
-	mockRepo.AssertExpectations(t)
+	err := usecase.CreateDepartment(input) // Call the use case method.
+	assert.NoError(t, err)                 // Assert no error.
+	mockRepo.AssertExpectations(t)         // Verify the mock's expectations.
 }
 
+// TestGetDepartmentByID tests the GetDepartmentByID method in the use case.
 func TestGetDepartmentByID(t *testing.T) {
 	mockRepo := new(MockDepartmentRepository)
 	usecase := NewDepartmentUsecase(mockRepo)
@@ -83,6 +85,7 @@ func TestGetDepartmentByID(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+// TestUpdateDepartment tests the UpdateDepartment method in the use case.
 func TestUpdateDepartment(t *testing.T) {
 	mockRepo := new(MockDepartmentRepository)
 	usecase := NewDepartmentUsecase(mockRepo)
@@ -113,6 +116,7 @@ func TestUpdateDepartment(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
+// TestDeleteDepartment tests the DeleteDepartment method in the use case.
 func TestDeleteDepartment(t *testing.T) {
 	mockRepo := new(MockDepartmentRepository)
 	usecase := NewDepartmentUsecase(mockRepo)
