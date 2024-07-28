@@ -14,7 +14,7 @@ type DepartmentUpdateDTO struct {
 	Status  uint   `json:"status" binding:"required"`
 }
 
-// DepartmentResponseDTO represents the data transfer object for updating a department.
+// DepartmentResponseDTO represents the data transfer object for response a department.
 type DepartmentResponseDTO struct {
 	Name    string `json:"name" binding:"required"`
 	Address string `json:"location" binding:"required"`
