@@ -42,7 +42,12 @@ func (h *DepartmentHandler) CreateDepartment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "department created successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "department created successfully",
+		"name":     input.Name,
+		"location": input.Address,
+		"status":   input.Status,
+	})
 }
 
 // GetDepartmentByID handles the HTTP GET request to retrieve a department by its ID.
@@ -82,12 +87,7 @@ func (h *DepartmentHandler) GetDepartmentByID(c *gin.Context) {
 // @Success 200 {object} domain.Department
 // @Router /api/v1/departments/{id} [put]
 func (h *DepartmentHandler) UpdateDepartment(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid department ID"})
-		return
-	}
-
+	id, _ := strconv.Atoi(c.Param("id"))
 	var input dto.DepartmentUpdateDTO
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -99,7 +99,12 @@ func (h *DepartmentHandler) UpdateDepartment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "department updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Department updated successfully",
+		"name":     input.Name,
+		"location": input.Address,
+		"status":   input.Status,
+	})
 }
 
 // DeleteDepartment handles the HTTP DELETE request to delete a department.
@@ -124,5 +129,7 @@ func (h *DepartmentHandler) DeleteDepartment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Deleted depatment successfully",
+	})
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/department/storage"
 )
 
-// DepartmentUsecaseInterface defines the methods that any use case implementation must provide.
+// DepartmentUsecase defines the methods that any use case implementation must provide.
 type DepartmentUsecaseInterface interface {
 	CreateDepartment(input dto.DepartmentCreateDTO) error
 	GetDepartmentByID(id uint) (*domain.Department, error)
