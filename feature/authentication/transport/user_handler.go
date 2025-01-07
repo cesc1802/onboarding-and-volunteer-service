@@ -61,5 +61,13 @@ func (h *AuthenticationHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// Sử dụng resp nhưng không trả về null
+	if resp == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User already registered",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, resp)
 }
