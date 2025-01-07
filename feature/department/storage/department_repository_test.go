@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/department/domain"
@@ -10,122 +12,143 @@ import (
 	"gorm.io/gorm"
 )
 
-// setupMockDB initializes a mock database connection and returns a GORM DB instance and the mock object.
-func setupMockDB(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
+func setupMockDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 	db, mock, err := sqlmock.New()
-	assert.NoError(t, err) // Assert that there are no errors creating the mock DB.
-
+	if err != nil {
+		return nil, nil, err
+	}
 	dialector := mysql.New(mysql.Config{
-		DSN:                       "sqlmock_db_0", // Data Source Name (DSN) for the mock database.
-		DriverName:                "mysql",
 		Conn:                      db,
 		SkipInitializeWithVersion: true,
 	})
-	gormDB, err := gorm.Open(dialector, &gorm.Config{})
-	assert.NoError(t, err) // Assert that GORM opens without error.
-
-	return gormDB, mock
+	gormDB, err := gorm.Open(dialector, &gorm.Config{
+		DisableAutomaticPing: true,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return gormDB, mock, nil
 }
 
-// TestCreateDepartment tests the Create method of DepartmentRepository.
-func TestCreateDepartment(t *testing.T) {
-	gormDB, mock := setupMockDB(t) // Set up mock DB and GORM instance.
+func TestDepartmentRepository_Create(t *testing.T) {
+	gormDB, mock, err := setupMockDB()
+	if err != nil {
+		t.Fatalf("failed to setup mock db: %v", err)
+	}
+	defer func() {
+		sqlDB, _ := gormDB.DB()
+		sqlDB.Close()
+	}()
 
-	repo := NewDepartmentRepository(gormDB) // Create a new DepartmentRepository.
+	// Create repository instance
+	repo := NewDepartmentRepository(gormDB)
 
-	// Define a department object for testing.
+	// Define test data
 	department := &domain.Department{
 		Name:    "HR",
 		Address: "123 HR Street",
-		Status:  123,
+		Status:  1,
 	}
 
-	// Set expectations for SQL execution: inserting a new department record.
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO `departments`").
-		WithArgs(department.Name, department.Address, department.Status).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `departments` (`name`,`address`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?)")).
+		WithArgs(department.Name, department.Address, department.Status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // Simulate successful insert
 	mock.ExpectCommit()
 
-	// Call the Create method and assert no errors.
-	err := repo.Create(department)
+	// Call the method under test
+	err = repo.Create(department)
+
+	// Assertions
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// TestGetDepartmentByID tests the GetByID method of DepartmentRepository.
 func TestGetDepartmentByID(t *testing.T) {
-	gormDB, mock := setupMockDB(t) // Set up mock DB and GORM instance.
+	gormDB, mock, err := setupMockDB()
+	if err != nil {
+		t.Fatalf("failed to setup mock db: %v", err)
+	}
+	defer func() {
+		sqlDB, _ := gormDB.DB()
+		sqlDB.Close()
+	}()
 
-	repo := NewDepartmentRepository(gormDB) // Create a new DepartmentRepository.
+	repo := NewDepartmentRepository(gormDB)
 
-	// Define a department object with expected data.
+	departmentID := uint(1)
 	department := &domain.Department{
+		ID:      departmentID,
 		Name:    "Finance",
 		Address: "456 Finance Street",
 		Status:  456,
 	}
-	// Set expectations for SQL query: selecting a department by ID.
-	rows := sqlmock.NewRows([]string{"id", "name", "address", "status"}).
-		AddRow(department.Id, department.Name, department.Address, department.Status)
 
-	mock.ExpectQuery("SELECT * FROM `departments` WHERE `departments`.`id` = ?").
-		WithArgs(department.Id).
+	rows := sqlmock.NewRows([]string{"id", "name", "address", "status"}).
+		AddRow(department.ID, department.Name, department.Address, department.Status)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `departments` WHERE `departments`.`id` = ? ORDER BY `departments`.`id` LIMIT ?")).
+		WithArgs(department.ID, 1).
 		WillReturnRows(rows)
 
-	// Call the GetByID method and assert the returned data matches expectations.
-	result, err := repo.GetByID(department.Id)
+	result, err := repo.GetByID(department.ID)
 	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, department.Name, result.Name)
-	assert.Equal(t, department.Address, result.Address)
-	assert.Equal(t, department.Status, result.Status)
+	assert.Equal(t, department, result)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// TestUpdateDepartment tests the Update method of DepartmentRepository.
 func TestUpdateDepartment(t *testing.T) {
-	gormDB, mock := setupMockDB(t) // Set up mock DB and GORM instance.
-
-	repo := NewDepartmentRepository(gormDB) // Create a new DepartmentRepository.
-
-	// Define a department object with new data to update.
-	department := &domain.Department{
-		Name:    "IT",
-		Address: "789 IT Street",
-		Status:  789,
+	gormDB, mock, err := setupMockDB()
+	if err != nil {
+		t.Fatalf("failed to setup mock db: %v", err)
 	}
-	// Set expectations for SQL execution: updating a department record.
+	defer func() {
+		sqlDB, _ := gormDB.DB()
+		sqlDB.Close()
+	}()
+
+	repo := NewDepartmentRepository(gormDB)
+
+	department := &domain.Department{
+		ID:        1,
+		Name:      "IT",
+		Address:   "789 IT Street",
+		Status:    789,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE `departments` SET `name`=?,`address`=?,`status`=? WHERE `id` = ?").
-		WithArgs(department.Name, department.Address, department.Status, department.Id).
-		WillReturnResult(sqlmock.NewResult(1, 1)) // Expecting one row to be affected.
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `departments` SET `name`=?,`address`=?,`status`=?,`created_at`=?,`updated_at`=? WHERE `id` = ?")).
+		WithArgs(department.Name, department.Address, department.Status, sqlmock.AnyArg(), sqlmock.AnyArg(), department.ID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	// Call the Update method and assert no errors.
-	err := repo.Update(department)
+	err = repo.Update(department)
 	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet()) // Assert that all mock expectations were met.
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-// TestDeleteDepartment tests the Delete method of DepartmentRepository.
 func TestDeleteDepartment(t *testing.T) {
-	gormDB, mock := setupMockDB(t) // Set up mock DB and GORM instance.
+	gormDB, mock, err := setupMockDB()
+	if err != nil {
+		t.Fatalf("failed to setup mock db: %v", err)
+	}
+	defer func() {
+		sqlDB, _ := gormDB.DB()
+		sqlDB.Close()
+	}()
+	repo := NewDepartmentRepository(gormDB)
 
-	repo := NewDepartmentRepository(gormDB) // Create a new DepartmentRepository.
+	departmentID := uint(1)
 
-	departmentID := uint(1) //Define the ID of the department to delete.
-
-	// Set expectations for SQL execution: deleting a department record.
 	mock.ExpectBegin()
 	mock.ExpectExec("DELETE FROM `departments` WHERE `departments`.`id` = ?").
 		WithArgs(departmentID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	// Call the Delete method and assert no errors.
-	err := repo.Delete(departmentID)
+	err = repo.Delete(departmentID)
 	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet()) // Assert that all mock expectations were met.
-
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
