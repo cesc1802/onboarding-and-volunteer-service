@@ -12,3 +12,7 @@ type Volunteer struct {
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
 }
+
+func (Volunteer) TableName() string {
+	return "volunteer_details"
+}
