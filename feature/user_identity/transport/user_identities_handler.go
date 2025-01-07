@@ -32,7 +32,8 @@ func (h *UserIdentityHandler) CreateUserIdentity(c *gin.Context) {
 		return
 	}
 
-	if err := h.UserIdentityUsecase.CreateUserIdentity(request); err != nil {
+	err := h.UserIdentityUsecase.CreateUserIdentity(request)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
