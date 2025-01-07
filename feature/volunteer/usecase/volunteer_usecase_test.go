@@ -115,14 +115,22 @@ func TestFindVolunteerByID(t *testing.T) {
 }
 
 func TestFindVolunteerByID_NotFound(t *testing.T) {
-	mockRepo := new(MockVolunteerRepository)
-	usecase := NewVolunteerUsecase(mockRepo)
+	repo := new(MockVolunteerRepository)
+	usecase := NewVolunteerUsecase(repo)
 
-	mockRepo.On("FindVolunteerByID", 1).Return(nil, errors.New("record not found"))
+	id := 1
 
-	result, err := usecase.FindVolunteerByID(1)
+	// Return nil explicitly typed as *domain.Volunteer and an error
+	expectedError := errors.New("volunteer not found")
+	repo.On("FindVolunteerByID", id).Return((*domain.Volunteer)(nil), expectedError)
 
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	mockRepo.AssertExpectations(t)
+	// Call the usecase method
+	response, err := usecase.FindVolunteerByID(id)
+
+	// Verify the mock method was called with the correct arguments
+	repo.AssertCalled(t, "FindVolunteerByID", id)
+
+	// Assertions
+	assert.Nil(t, response)                          // Ensure the response is nil
+	assert.EqualError(t, err, expectedError.Error()) // Ensure the error message matches
 }
