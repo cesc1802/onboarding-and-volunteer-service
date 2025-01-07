@@ -142,7 +142,7 @@ func RegisterHandlerV1(mono system.Service) {
 		volRequest.POST("/", volunteerRequestHandler.CreateVolunteerRequest)
 	}
 
-	country := v1.Group("/country")
+	country := v1.Group("/countries")
 	{
 		country.POST("/", countryHandler.CreateCountry)
 		country.PUT("/:id", countryHandler.UpdateCountry)
@@ -150,7 +150,7 @@ func RegisterHandlerV1(mono system.Service) {
 		country.GET("/:id", countryHandler.GetCountryByID)
 	}
 
-	department := v1.Group("/department")
+	department := v1.Group("/departments")
 	{
 		department.POST("/", departmentHandler.CreateDepartment)
 		department.PUT("/:id", departmentHandler.UpdateDepartment)
