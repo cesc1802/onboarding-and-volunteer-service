@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -30,19 +31,23 @@ func NewCountryHandler(usecase usecase.CountryUsecaseInterface) *CountryHandler 
 // @Success 201 {object} domain.Country
 // @Router /api/v1/countries [post]
 func (h *CountryHandler) CreateCountry(c *gin.Context) {
+	fmt.Println("CreateCountry handler called") // Log for debugging
 	var input dto.CountryCreateDTO
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := h.usecase.CreateCountry(input)
-	if err != nil {
+	if err := h.usecase.CreateCountry(input); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Country created successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Create country successfully",
+		"name":    input.Name,
+		"status":  input.Status,
+	})
 }
 
 // GetCountryByID handles the HTTP GET request to retrieve a country by its ID.
@@ -82,15 +87,15 @@ func (h *CountryHandler) GetCountryByID(c *gin.Context) {
 // @Success 200 {object} domain.Country
 // @Router /api/v1/countries/{id} [put]
 func (h *CountryHandler) UpdateCountry(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid country ID"})
-		return
-	}
-
 	var input dto.CountryUpdateDTO
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ID"})
 		return
 	}
 
@@ -99,7 +104,10 @@ func (h *CountryHandler) UpdateCountry(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Country updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Country updated successfully",
+		"name":    input.Name,
+		"status":  input.Status})
 }
 
 // DeleteCountry handles the HTTP DELETE request to delete a country.
@@ -123,5 +131,7 @@ func (h *CountryHandler) DeleteCountry(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Deleted Country successfully",
+	})
 }
