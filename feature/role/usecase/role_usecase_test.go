@@ -44,7 +44,7 @@ func TestCreateRole(t *testing.T) {
 
 	input := dto.RoleCreateDTO{
 		Name:   "Admin",
-		Status: 123,
+		Status: "123",
 	}
 
 	role := &domain.Role{
@@ -66,7 +66,7 @@ func TestGetRoleByID(t *testing.T) {
 	role := &domain.Role{
 
 		Name:   "Admin",
-		Status: 456,
+		Status: "456",
 	}
 
 	mockRepo.On("GetByID", uint(1)).Return(role, nil)
@@ -85,12 +85,12 @@ func TestUpdateRole(t *testing.T) {
 
 	role := &domain.Role{
 		Name:   "Admin",
-		Status: 789,
+		Status: "789",
 	}
 
 	input := dto.RoleUpdateDTO{
 		Name:   "Admin Updated",
-		Status: 666,
+		Status: "666",
 	}
 
 	mockRepo.On("GetByID", uint(1)).Return(role, nil)
