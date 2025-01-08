@@ -48,8 +48,7 @@ func TestRoleHandler_CreateRole(t *testing.T) {
 	router.POST("/api/v1/roles", handler.CreateRole)
 
 	input := dto.RoleCreateDTO{
-		Name:   "Admin",
-		Status: "pending",
+		Name: "Admin",
 	}
 
 	mockUsecase.On("CreateRole", input).Return(nil)
@@ -74,8 +73,7 @@ func TestRoleHandler_GetRoleByID(t *testing.T) {
 	router.GET("/api/v1/role/:id", handler.GetRoleByID)
 
 	role := &domain.Role{
-		Name:   "Admin",
-		Status: "Pending",
+		Name: "Admin",
 	}
 
 	mockUsecase.On("GetRoleByID", uint(1)).Return(role, nil)
@@ -99,8 +97,7 @@ func TestRoleHandler_UpdateRole(t *testing.T) {
 	router.PUT("/api/v1/role/:id", handler.UpdateRole)
 
 	input := dto.RoleUpdateDTO{
-		Name:   "Admin Updated",
-		Status: "Pending",
+		Name: "Admin Updated",
 	}
 
 	mockUsecase.On("UpdateRole", uint(1), input).Return(nil)

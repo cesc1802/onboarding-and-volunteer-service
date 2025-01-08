@@ -43,13 +43,11 @@ func TestRoleRepository_Create(t *testing.T) {
 	repo := NewRoleRepository(gormDB)
 
 	role := &domain.Role{
-		Name:   "Admin",
-		Status: "pending",
+		Name: "Admin",
 	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `roles` (`name`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?)")).
-		WithArgs(role.Name, role.Status, sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -72,13 +70,12 @@ func TestRoleRepository_GetByID(t *testing.T) {
 
 	roleID := uint(1)
 	role := &domain.Role{
-		ID:     roleID,
-		Name:   "Admin",
-		Status: "approve",
+		ID:   roleID,
+		Name: "Admin",
 	}
 
 	rows := sqlmock.NewRows([]string{"id", "name", "status"}).
-		AddRow(role.ID, role.Name, role.Status)
+		AddRow(role.ID, role.Name)
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `roles` WHERE `roles`.`id` = ? ORDER BY `roles`.`id` LIMIT ?")).
 		WithArgs(roleID, 1).
 		WillReturnRows(rows)
@@ -87,7 +84,6 @@ func TestRoleRepository_GetByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, role.Name, result.Name)
-	assert.Equal(t, role.Status, result.Status)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -106,14 +102,12 @@ func TestRoleRepository_Update(t *testing.T) {
 	role := &domain.Role{
 		ID:        1,
 		Name:      "Admin",
-		Status:    "rejected",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `roles` SET `name`=?,`status`=?,`created_at`=?,`updated_at`=? WHERE `id` = ?")).
-		WithArgs(role.Name, role.Status, sqlmock.AnyArg(), sqlmock.AnyArg(), role.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 

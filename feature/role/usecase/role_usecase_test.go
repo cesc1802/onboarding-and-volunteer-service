@@ -43,13 +43,11 @@ func TestCreateRole(t *testing.T) {
 	usecase := NewRoleUsecase(mockRepo)
 
 	input := dto.RoleCreateDTO{
-		Name:   "Admin",
-		Status: "123",
+		Name: "Admin",
 	}
 
 	role := &domain.Role{
-		Name:   input.Name,
-		Status: input.Status,
+		Name: input.Name,
 	}
 
 	mockRepo.On("Create", role).Return(nil)
@@ -65,8 +63,7 @@ func TestGetRoleByID(t *testing.T) {
 
 	role := &domain.Role{
 
-		Name:   "Admin",
-		Status: "456",
+		Name: "Admin",
 	}
 
 	mockRepo.On("GetByID", uint(1)).Return(role, nil)
@@ -75,7 +72,6 @@ func TestGetRoleByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, role.Name, result.Name)
-	assert.Equal(t, role.Status, result.Status)
 	mockRepo.AssertCalled(t, "GetByID", uint(1))
 }
 
@@ -84,13 +80,11 @@ func TestUpdateRole(t *testing.T) {
 	usecase := NewRoleUsecase(mockRepo)
 
 	role := &domain.Role{
-		Name:   "Admin",
-		Status: "789",
+		Name: "Admin",
 	}
 
 	input := dto.RoleUpdateDTO{
-		Name:   "Admin Updated",
-		Status: "666",
+		Name: "Admin Updated",
 	}
 
 	mockRepo.On("GetByID", uint(1)).Return(role, nil)
@@ -99,7 +93,6 @@ func TestUpdateRole(t *testing.T) {
 	err := usecase.UpdateRole(1, input)
 	assert.NoError(t, err)
 	assert.Equal(t, input.Name, role.Name)
-	assert.Equal(t, input.Status, role.Status)
 	mockRepo.AssertCalled(t, "GetByID", uint(1))
 	mockRepo.AssertCalled(t, "Update", role)
 }
