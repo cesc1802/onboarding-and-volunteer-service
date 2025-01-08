@@ -11,7 +11,8 @@ import (
 
 var migrate = &cobra.Command{
 	Use:   "migrate",
-	Short: "",
+	Short: "Run database migrations",
+	Long:  "Apply, rollback, or view database migrations.",
 }
 
 var up = &cobra.Command{
