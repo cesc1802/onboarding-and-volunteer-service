@@ -27,8 +27,7 @@ func NewRoleUsecase(Rolerepo storage.RoleRepositoryInterface) *RoleUsecase {
 // CreateRole creates a new role using the provided DTO.
 func (u *RoleUsecase) CreateRole(input dto.RoleCreateDTO) error {
 	role := &domain.Role{
-		Name:   input.Name,
-		Status: input.Status,
+		Name: input.Name,
 	}
 	return u.Rolerepo.Create(role)
 }
@@ -45,7 +44,6 @@ func (u *RoleUsecase) UpdateRole(id uint, input dto.RoleUpdateDTO) error {
 		return err
 	}
 	role.Name = input.Name
-	role.Status = input.Status
 	return u.Rolerepo.Update(role)
 }
 
