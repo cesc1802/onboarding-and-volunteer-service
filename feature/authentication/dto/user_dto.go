@@ -29,6 +29,7 @@ type LoginUserTokenResponse struct {
 }
 
 type RegisterUserRequest struct {
+	ID                 int    `json:"id"`
 	Email              string `json:"email" binding:"required,email"`
 	Name               string `json:"name" binding:"required"`
 	Surname            string `json:"surname" binding:"required"`

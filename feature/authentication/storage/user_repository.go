@@ -87,6 +87,7 @@ func (r *AuthenticationRepository) RegisterUser(request *dto.RegisterUserRequest
 	response := &dto.RegisterUserResponse{
 		Message: "User registered successfully",
 		User: &dto.RegisterUserRequest{
+			ID:                 user.ID,
 			Email:              user.Email,
 			Name:               user.Name,
 			Password:           user.Password,
