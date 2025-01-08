@@ -13,7 +13,7 @@ type User struct {
 	Name               string    `gorm:"not null"`
 	Surname            string    `gorm:"not null"`
 	Gender             string    `gorm:"size:6;not null"`
-	Dob                string    `gorm:"not null"`
+	Dob                time.Time `gorm:"not null"`
 	Mobile             string    `gorm:"not null"`
 	CountryID          *int      `gorm:"index"`
 	ResidentCountryID  *int      `gorm:"index"`

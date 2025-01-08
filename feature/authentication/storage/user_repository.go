@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"errors"
 	"log"
+	"time"
 
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/authentication/domain"
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/authentication/dto"
@@ -53,13 +55,19 @@ func (r *AuthenticationRepository) RegisterUser(request *dto.RegisterUserRequest
 		return nil, err
 	}
 
+	dob, err := time.Parse("2006-01-02", request.Dob) // Expected format: YYYY-MM-DD
+	if err != nil {
+		log.Println("Invalid Dob format:", request.Dob)
+		return nil, errors.New("invalid date of birth format, expected YYYY-MM-DD")
+	}
+
 	user := domain.User{
 		Email:              request.Email,
 		Name:               request.Name,
 		Surname:            request.Surname,
 		Password:           string(hashedPassword),
 		Gender:             request.Gender,
-		Dob:                request.Dob,
+		Dob:                dob,
 		Mobile:             request.Mobile,
 		CountryID:          &request.CountryID,
 		ResidentCountryID:  &request.ResidentCountryID,
@@ -84,7 +92,7 @@ func (r *AuthenticationRepository) RegisterUser(request *dto.RegisterUserRequest
 			Password:           user.Password,
 			Surname:            user.Surname,
 			Gender:             user.Gender,
-			Dob:                user.Dob,
+			Dob:                user.Dob.Format("11/01/2000"),
 			Mobile:             user.Mobile,
 			Avatar:             user.Avatar,
 			CountryID:          *user.CountryID,
