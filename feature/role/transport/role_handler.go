@@ -46,7 +46,6 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "role created successfully",
 		"name":    input.Name,
-		"status":  input.Status,
 	})
 }
 
@@ -106,7 +105,6 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "role updated successfully",
 		"name":    input.Name,
-		"status":  input.Status,
 	})
 }
 
