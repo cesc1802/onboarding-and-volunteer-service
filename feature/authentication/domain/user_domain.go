@@ -13,11 +13,11 @@ type User struct {
 	Name               string    `gorm:"not null"`
 	Surname            string    `gorm:"not null"`
 	Gender             string    `gorm:"size:6;not null"`
-	Dob                *string   `gorm:"not null"`
-	Mobile             *string   `gorm:"not null"`
+	Dob                string    `gorm:"not null"`
+	Mobile             string    `gorm:"not null"`
 	CountryID          *int      `gorm:"index"`
 	ResidentCountryID  *int      `gorm:"index"`
-	Avatar             *string   `gorm:"default:null"`
+	Avatar             string    `gorm:"default:null"`
 	VerificationStatus int       `gorm:"default:0"`
 	Status             int       `gorm:"not null"`
 	CreatedAt          time.Time `gorm:"autoCreateTime"`
