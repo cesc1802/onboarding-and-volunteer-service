@@ -26,16 +26,35 @@ func AuthMiddleware(secretKey string) gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
-		token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 			return []byte(secretKey), nil
 		})
 
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token", "details": err.Error()})
+			c.Abort()
+			return
+		}
+
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			c.Set("userId", int(claims["userId"].(float64)))
-			c.Set("roleId", int(claims["roleId"].(float64)))
+			if userId, ok := claims["userId"].(float64); ok {
+				c.Set("userId", int(userId))
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token payload: userId missing"})
+				c.Abort()
+				return
+			}
+
+			if roleId, ok := claims["roleId"].(float64); ok {
+				c.Set("roleId", int(roleId))
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token payload: roleId missing"})
+				c.Abort()
+				return
+			}
 		} else {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
