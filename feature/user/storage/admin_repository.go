@@ -1,9 +1,12 @@
 package storage
 
 import (
+	"errors"
+	"log"
+	"strings"
+
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/user/domain"
 	"gorm.io/gorm"
-	"strings"
 )
 
 type AdminRepositoryInterface interface {
@@ -24,9 +27,10 @@ type AdminRepository struct {
 func NewAdminRepository(db *gorm.DB) *AdminRepository {
 	return &AdminRepository{db: db}
 }
+
 func (r *AdminRepository) GetListPendingRequest() ([]*domain.Request, string) {
 	var listRequest []*domain.Request
-	result := r.db.Where("status = ?", 0).Find(&listRequest)
+	result := r.db.Where("reject_notes IS NULL OR verifier_id IS NULL").Find(&listRequest)
 	if result.Error != nil {
 		return nil, result.Error.Error()
 	}
@@ -37,9 +41,14 @@ func (r *AdminRepository) GetListPendingRequest() ([]*domain.Request, string) {
 }
 
 func (r *AdminRepository) GetPendingRequestByID(id int) (*domain.Request, string) {
+	log.Printf("Attempting to fetch request with ID: %d", id)
 	var request domain.Request
-	result := r.db.Where("id = ? and status = 0", id).First(&request)
+	result := r.db.Where("id = ?", id).First(&request)
 	if result.Error != nil {
+		log.Printf("Error occurred while fetching request with ID %d: %v", id, result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, "No pending request found with the given ID"
+		}
 		return nil, result.Error.Error()
 	}
 	return &request, ""
@@ -61,53 +70,47 @@ func (r *AdminRepository) GetRequestByID(id int) (*domain.Request, string) {
 	var request domain.Request
 	result := r.db.Where("id = ?", id).First(&request)
 	if result.Error != nil {
+
 		return nil, result.Error.Error()
 	}
 	return &request, ""
 }
 
-// ApproveRequest change status of request to 1 (approved)
-// change verifier_id to admin id
-// if requestType is registration, change user role to 1 (applicant)
-// else if requestType is verification, change user role to 2 (volunteer) and change verification status to 1 (active)
-// and insert this user to volunteer_details table
-func (r *AdminRepository) ApproveRequest(id int, verifier_id int) string {
-	// get request type
-	request := r.getRequestByRequestID(id)
-	if request == nil {
-		return "Request not found"
+func (r *AdminRepository) ApproveRequest(id int, verifierID int) string {
+	// Get request type
+	request, err := r.GetRequestByID(id)
+	if err != "" {
+		return err
 	}
 	if request.Status != 0 {
 		return "Request already processed"
 	}
 	userID := request.UserID
 	if strings.TrimSpace(request.Type) == "registration" {
-		result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 1).Update("verifier_id", verifier_id)
+		result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 1).Update("verifier_id", verifierID)
 		if result.Error != nil {
 			return result.Error.Error()
 		}
-		// change user role to 1 (applicant)
-		s, done := updateRoleId(result, r, userID, 1)
+		// Change user role to 1 (applicant)
+		s, done := updateRoleId(r, userID, 1)
 		if done {
 			return s
 		}
 		return "Approve request success"
 	} else if strings.TrimSpace(request.Type) == "verification" {
-		result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 1).Update("verifier_id", verifier_id)
+		result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 1).Update("verifier_id", verifierID)
 		if result.Error != nil {
 			return result.Error.Error()
 		}
-		// change user role to 2 (volunteer)
-		s, done := updateRoleId(result, r, userID, 2)
+		// Change user role to 2 (volunteer)
+		s, done := updateRoleId(r, userID, 2)
 		if done {
 			return s
 		}
-		// insert to volunteer_details
-		departmentID := r.getDeptIdFromUser(userID)
+		// Insert into volunteer_details
 		volunteerDetail := domain.VolunteerDetail{
-			UserID:       userID,
-			DepartmentID: *departmentID,
-			Status:       1,
+			UserID: userID,
+			Status: 1,
 		}
 		result = r.db.Create(&volunteerDetail)
 		if result.Error != nil {
@@ -117,13 +120,15 @@ func (r *AdminRepository) ApproveRequest(id int, verifier_id int) string {
 	}
 	return "Invalid request type"
 }
-func (r *AdminRepository) RejectRequest(id int, verifier_id int) string {
-	result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 2).Update("verifier_id", verifier_id)
+
+func (r *AdminRepository) RejectRequest(id int, verifierID int) string {
+	result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("status", 2).Update("verifier_id", verifierID)
 	if result.Error != nil {
 		return result.Error.Error()
 	}
 	return "Reject request success"
 }
+
 func (r *AdminRepository) AddRejectNotes(id int, notes string) string {
 	result := r.db.Model(&domain.Request{}).Where("id = ?", id).Update("reject_notes", notes)
 	if result.Error != nil {
@@ -131,6 +136,7 @@ func (r *AdminRepository) AddRejectNotes(id int, notes string) string {
 	}
 	return "Add reject notes success"
 }
+
 func (r *AdminRepository) DeleteRequest(id int) string {
 	result := r.db.Where("id = ?", id).Delete(&domain.Request{})
 	if result.Error != nil {
@@ -139,20 +145,17 @@ func (r *AdminRepository) DeleteRequest(id int) string {
 	return "Delete request success"
 }
 
-func (r *AdminRepository) getRequestByRequestID(requestID int) *domain.Request {
-	var request *domain.Request
+func (r *AdminRepository) GetRequestByRequestID(requestID int) (*domain.Request, string) {
+	var request domain.Request
 	r.db.First(&request, requestID)
-	return request
+	if request.ID == 0 {
+		return nil, "Request not found"
+	}
+	return &request, ""
 }
 
-func (r *AdminRepository) getDeptIdFromUser(id uint) *int {
-	var user domain.User
-	r.db.First(&user, id)
-	return user.DepartmentID
-}
-
-func updateRoleId(result *gorm.DB, r *AdminRepository, userID uint, roleId int) (string, bool) {
-	result = r.db.Model(&domain.User{}).Where("id = ?", userID).Update("role_id", roleId)
+func updateRoleId(r *AdminRepository, userID uint, roleId int) (string, bool) {
+	result := r.db.Model(&domain.User{}).Where("id = ?", userID).Update("role_id", roleId)
 	if result.Error != nil {
 		return result.Error.Error(), true
 	}

@@ -44,8 +44,6 @@ func (u *AdminUsecase) GetPendingRequestById(id int) (*dto.RequestResponse, stri
 			Status:      request.Status,
 			RejectNotes: request.RejectNotes,
 			VerifierID:  request.VerifierID,
-			CreateAt:    request.CreatedAt,
-			UpdateAt:    request.UpdatedAt,
 		}, msg
 	} else {
 		msg = "Request not found"
@@ -74,8 +72,6 @@ func (u *AdminUsecase) GetRequestById(id int) (*dto.RequestResponse, string) {
 			Status:      request.Status,
 			RejectNotes: request.RejectNotes,
 			VerifierID:  request.VerifierID,
-			CreateAt:    request.CreatedAt,
-			UpdateAt:    request.UpdatedAt,
 		}, msg
 	} else {
 		msg = "Request not found"

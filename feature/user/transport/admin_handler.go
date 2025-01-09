@@ -1,11 +1,12 @@
 package transport
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/user/dto"
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/user/usecase"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"strconv"
 )
 
 type AdminHandler struct {
