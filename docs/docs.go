@@ -487,7 +487,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.AppplicantUpdateDTO"
+                            "$ref": "#/definitions/dto.ApplicantUpdateDTO"
                         }
                     }
                 ],
@@ -959,38 +959,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/volunteer/": {
-            "post": {
-                "description": "Create volunteer",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "volunteer"
-                ],
-                "summary": "Create volunteer",
-                "parameters": [
-                    {
-                        "description": "Create Volunteer Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VolunteerCreateDTO"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Volunteer created successfully",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/volunteer/request": {
+        "/api/v1/volunteer-request": {
             "post": {
                 "description": "Create a new volunteer request",
                 "consumes": [
@@ -1017,6 +986,37 @@ const docTemplate = `{
                 "responses": {
                     "201": {
                         "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/volunteer/": {
+            "post": {
+                "description": "Create volunteer",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "volunteer"
+                ],
+                "summary": "Create volunteer",
+                "parameters": [
+                    {
+                        "description": "Create Volunteer Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VolunteerCreateDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Volunteer created successfully",
                         "schema": {
                             "type": "string"
                         }
@@ -1202,9 +1202,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "status": {
-                    "type": "integer"
-                },
                 "updated_at": {
                     "type": "string"
                 }
@@ -1213,13 +1210,28 @@ const docTemplate = `{
         "domain.Volunteer": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "countryID": {
+                    "type": "integer"
+                },
                 "createdAt": {
                     "type": "string"
                 },
                 "departmentID": {
                     "type": "integer"
                 },
+                "dob": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "integer"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "residentCountryID": {
                     "type": "integer"
                 },
                 "status": {
@@ -1229,6 +1241,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userID": {
+                    "type": "integer"
+                },
+                "verificationStatus": {
                     "type": "integer"
                 }
             }
@@ -1317,7 +1332,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.AppplicantUpdateDTO": {
+        "dto.ApplicantUpdateDTO": {
             "type": "object",
             "properties": {
                 "country_id": {
@@ -1476,19 +1491,8 @@ const docTemplate = `{
         "dto.LoginUserResponse": {
             "type": "object",
             "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "country_id": {
-                    "type": "integer"
-                },
-                "department_id": {
-                    "type": "integer"
-                },
-                "dob": {
-                    "type": "string"
-                },
                 "email": {
+                    "description": "RoleID int ` + "`" + `json:\"role_id\"` + "`" + `\nDepartmentID       int       ` + "`" + `json:\"department_id\"` + "`" + `",
                     "type": "string"
                 },
                 "gender": {
@@ -1497,26 +1501,11 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "mobile": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
-                "resident_country_id": {
-                    "type": "integer"
-                },
-                "role_id": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "integer"
-                },
                 "surname": {
                     "type": "string"
-                },
-                "verification_status": {
-                    "type": "integer"
                 }
             }
         },
@@ -1524,13 +1513,25 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
+                "gender",
                 "name",
                 "password",
-                "re_password"
+                "re_password",
+                "surname"
             ],
             "properties": {
                 "email": {
                     "type": "string"
+                },
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ]
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -1540,6 +1541,9 @@ const docTemplate = `{
                 },
                 "re_password": {
                     "type": "string"
+                },
+                "surname": {
+                    "type": "string"
                 }
             }
         },
@@ -1548,15 +1552,15 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.RegisterUserRequest"
                 }
             }
         },
         "dto.RequestResponse": {
             "type": "object",
             "properties": {
-                "create_at": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -1567,9 +1571,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
-                },
-                "update_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -1583,30 +1584,22 @@ const docTemplate = `{
         "dto.RoleCreateDTO": {
             "type": "object",
             "required": [
-                "name",
-                "status"
+                "name"
             ],
             "properties": {
                 "name": {
                     "type": "string"
-                },
-                "status": {
-                    "type": "integer"
                 }
             }
         },
         "dto.RoleUpdateDTO": {
             "type": "object",
             "required": [
-                "name",
-                "status"
+                "name"
             ],
             "properties": {
                 "name": {
                     "type": "string"
-                },
-                "status": {
-                    "type": "integer"
                 }
             }
         },
@@ -1667,7 +1660,22 @@ const docTemplate = `{
                 "user_id"
             ],
             "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "country_id": {
+                    "type": "integer"
+                },
                 "department_id": {
+                    "type": "integer"
+                },
+                "dob": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "resident_country_id": {
                     "type": "integer"
                 },
                 "status": {
@@ -1675,16 +1683,37 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                },
+                "verification_status": {
+                    "type": "integer"
                 }
             }
         },
         "dto.VolunteerUpdateDTO": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "type": "string"
+                },
+                "country_id": {
+                    "type": "integer"
+                },
                 "department_id": {
                     "type": "integer"
                 },
+                "dob": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
+                "resident_country_id": {
+                    "type": "integer"
+                },
                 "status": {
+                    "type": "integer"
+                },
+                "verification_status": {
                     "type": "integer"
                 }
             }

@@ -54,24 +54,34 @@ definitions:
         type: integer
       name:
         type: string
-      status:
-        type: integer
       updated_at:
         type: string
     type: object
   domain.Volunteer:
     properties:
+      avatar:
+        type: string
+      countryID:
+        type: integer
       createdAt:
         type: string
       departmentID:
         type: integer
+      dob:
+        type: string
       id:
+        type: integer
+      mobile:
+        type: string
+      residentCountryID:
         type: integer
       status:
         type: integer
       updatedAt:
         type: string
       userID:
+        type: integer
+      verificationStatus:
         type: integer
     type: object
   dto.AddRejectNoteRequest:
@@ -130,7 +140,7 @@ definitions:
       surname:
         type: string
     type: object
-  dto.AppplicantUpdateDTO:
+  dto.ApplicantUpdateDTO:
     properties:
       country_id:
         type: integer
@@ -237,60 +247,56 @@ definitions:
     type: object
   dto.LoginUserResponse:
     properties:
-      avatar:
-        type: string
-      country_id:
-        type: integer
-      department_id:
-        type: integer
-      dob:
-        type: string
       email:
+        description: |-
+          RoleID int `json:"role_id"`
+          DepartmentID       int       `json:"department_id"`
         type: string
       gender:
         type: string
       id:
         type: integer
-      mobile:
-        type: string
       name:
         type: string
-      resident_country_id:
-        type: integer
-      role_id:
-        type: integer
-      status:
-        type: integer
       surname:
         type: string
-      verification_status:
-        type: integer
     type: object
   dto.RegisterUserRequest:
     properties:
       email:
         type: string
+      gender:
+        enum:
+        - male
+        - female
+        type: string
+      id:
+        type: integer
       name:
         type: string
       password:
         type: string
       re_password:
         type: string
+      surname:
+        type: string
     required:
     - email
+    - gender
     - name
     - password
     - re_password
+    - surname
     type: object
   dto.RegisterUserResponse:
     properties:
       message:
         type: string
+      user:
+        $ref: '#/definitions/dto.RegisterUserRequest'
     type: object
   dto.RequestResponse:
     properties:
-      create_at:
-        type: string
       id:
         type: integer
       reject_notes:
@@ -298,8 +304,6 @@ definitions:
       status:
         type: integer
       type:
-        type: string
-      update_at:
         type: string
       user_id:
         type: integer
@@ -310,21 +314,15 @@ definitions:
     properties:
       name:
         type: string
-      status:
-        type: integer
     required:
     - name
-    - status
     type: object
   dto.RoleUpdateDTO:
     properties:
       name:
         type: string
-      status:
-        type: integer
     required:
     - name
-    - status
     type: object
   dto.UpdateUserIdentityRequest:
     properties:
@@ -360,11 +358,23 @@ definitions:
     type: object
   dto.VolunteerCreateDTO:
     properties:
+      avatar:
+        type: string
+      country_id:
+        type: integer
       department_id:
+        type: integer
+      dob:
+        type: string
+      mobile:
+        type: string
+      resident_country_id:
         type: integer
       status:
         type: integer
       user_id:
+        type: integer
+      verification_status:
         type: integer
     required:
     - department_id
@@ -373,9 +383,21 @@ definitions:
     type: object
   dto.VolunteerUpdateDTO:
     properties:
+      avatar:
+        type: string
+      country_id:
+        type: integer
       department_id:
         type: integer
+      dob:
+        type: string
+      mobile:
+        type: string
+      resident_country_id:
+        type: integer
       status:
+        type: integer
+      verification_status:
         type: integer
     type: object
   dto.VoluteerRequestCreatingDTO:
@@ -712,7 +734,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.AppplicantUpdateDTO'
+          $ref: '#/definitions/dto.ApplicantUpdateDTO'
       produces:
       - application/json
       responses:
@@ -1006,6 +1028,28 @@ paths:
       summary: Update role
       tags:
       - role
+  /api/v1/volunteer-request:
+    post:
+      consumes:
+      - application/json
+      description: Create a new volunteer request
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VoluteerRequestCreatingDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+      summary: Create a new volunteer request
+      tags:
+      - volunteer
   /api/v1/volunteer/:
     post:
       description: Create volunteer
@@ -1085,28 +1129,6 @@ paths:
           schema:
             type: string
       summary: Update volunteer
-      tags:
-      - volunteer
-  /api/v1/volunteer/request:
-    post:
-      consumes:
-      - application/json
-      description: Create a new volunteer request
-      parameters:
-      - description: Request body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VoluteerRequestCreatingDTO'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            type: string
-      summary: Create a new volunteer request
       tags:
       - volunteer
 securityDefinitions:
