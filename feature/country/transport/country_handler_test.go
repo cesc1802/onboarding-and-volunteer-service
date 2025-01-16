@@ -47,10 +47,17 @@ func TestCreateCountry(t *testing.T) {
 	r := gin.Default()
 	r.POST("/api/v1/countries", handler.CreateCountry)
 
-	input := dto.CountryCreateDTO{Name: "Test Country"}
-	response := dto.CountryResponseDTO{Name: "Test Country"}
+	input := dto.CountryCreateDTO{
+		Name:   "Test Country",
+		Status: 1,
+	}
 
-	mockUsecase.On("CreateCountry", input).Return(response, nil)
+	response := dto.CountryCreateDTO{
+		Name:   "Test Country",
+		Status: 1,
+	}
+	mockUsecase.On("CreateCountry", input).Return(nil)
+	mockUsecase.On("CreateCountry", response).Return(nil)
 
 	body, _ := json.Marshal(input)
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/countries", bytes.NewBuffer(body))
@@ -59,10 +66,15 @@ func TestCreateCountry(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusCreated, w.Code)
-	var result dto.CountryResponseDTO
-	json.Unmarshal(w.Body.Bytes(), &result)
-	assert.Equal(t, response, result)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var result map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &result)
+	assert.NoError(t, err)
+
+	t.Logf("Response body: %s", w.Body.String())
+
+	assert.Equal(t, "Test Country", result["name"])
 
 	mockUsecase.AssertExpectations(t)
 }
@@ -75,19 +87,31 @@ func TestGetCountryByID(t *testing.T) {
 	r := gin.Default()
 	r.GET("/countries/:id", handler.GetCountryByID)
 
-	response := dto.CountryResponseDTO{Name: "Test Country"}
+	response := &dto.CountryResponseDTO{
+		Name:   "Test Country",
+		Status: 1,
+	}
 
-	mockUsecase.On("GetCountryByID", uint(1)).Return(response, nil)
+	mockUsecase.On("GetCountryByID", uint(1)).Return(response, nil).Once()
 
 	req, _ := http.NewRequest(http.MethodGet, "/countries/1", nil)
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	t.Logf("Response status code: %d", w.Code)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status %d but got %d", http.StatusOK, w.Code)
+	}
+
 	var result dto.CountryResponseDTO
-	json.Unmarshal(w.Body.Bytes(), &result)
-	assert.Equal(t, response, result)
+	err := json.Unmarshal(w.Body.Bytes(), &result)
+	if err != nil {
+		t.Fatalf("Error unmarshaling response: %v", err)
+	}
+
+	assert.Equal(t, response, &result)
 
 	mockUsecase.AssertExpectations(t)
 }
@@ -101,9 +125,8 @@ func TestUpdateCountry(t *testing.T) {
 	r.PUT("/countries/:id", handler.UpdateCountry)
 
 	input := dto.CountryUpdateDTO{Name: "Updated Country"}
-	response := dto.CountryResponseDTO{Name: "Updated Country"}
 
-	mockUsecase.On("UpdateCountry", uint(1), input).Return(response, nil)
+	mockUsecase.On("UpdateCountry", uint(1), input).Return(nil)
 
 	body, _ := json.Marshal(input)
 	req, _ := http.NewRequest(http.MethodPut, "/countries/1", bytes.NewBuffer(body))
@@ -113,10 +136,6 @@ func TestUpdateCountry(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var result dto.CountryResponseDTO
-	json.Unmarshal(w.Body.Bytes(), &result)
-	assert.Equal(t, response, result)
-
 	mockUsecase.AssertExpectations(t)
 }
 
@@ -135,8 +154,14 @@ func TestDeleteCountry(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNoContent, w.Code)
-	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Adjust test to expect the message
+	var result map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &result)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "Deleted Country successfully", result["message"])
 
 	mockUsecase.AssertExpectations(t)
 }

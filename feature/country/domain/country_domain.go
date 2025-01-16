@@ -6,7 +6,7 @@ import (
 
 // Country struct that interacts with databases (GORM)
 type Country struct {
-	Id        uint      `gorm:"primaryKey" json:"id"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:255;not null;unique" json:"name"`
 	Status    uint      `gorm:"not null" json:"status"`
 	CreatedAt time.Time `json:"created_at"`

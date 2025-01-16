@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -35,13 +36,17 @@ func (h *RoleHandler) CreateRole(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("Creating role:", input) // Add print to debug
 	err := h.usecase.CreateRole(input)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "department created successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "role created successfully",
+		"name":    input.Name,
+	})
 }
 
 // GetRoleByID handles the HTTP GET request to retrieve a role by its ID.
@@ -97,7 +102,10 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "role updated successfully"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "role updated successfully",
+		"name":    input.Name,
+	})
 }
 
 // DeleteRole handles the HTTP DELETE request to delete a role.
@@ -122,5 +130,6 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	c.JSON(http.StatusNoContent, gin.H{
+		"message": "role updated successfully"})
 }

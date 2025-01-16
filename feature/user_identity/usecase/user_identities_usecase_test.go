@@ -15,37 +15,50 @@ type MockUserIdentityRepository struct {
 	mock.Mock
 }
 
-func (m *MockUserIdentityRepository) CreateUserIdentity(UserIdentity *domain.UserIdentity) error {
-	args := m.Called(UserIdentity)
+func (m *MockUserIdentityRepository) CreateUserIdentity(identity *domain.UserIdentity) error {
+	args := m.Called(identity)
 	return args.Error(0)
 }
 
-func (m *MockUserIdentityRepository) UpdateUserIdentity(UserIdentity *domain.UserIdentity) error {
-	args := m.Called(UserIdentity)
+func (m *MockUserIdentityRepository) UpdateUserIdentity(identity *domain.UserIdentity) error {
+	args := m.Called(identity)
 	return args.Error(0)
 }
 
 func (m *MockUserIdentityRepository) FindUserIdentityByID(id int) (*domain.UserIdentity, error) {
 	args := m.Called(id)
-	return args.Get(0).(*domain.UserIdentity), args.Error(1)
+	if args.Get(0) != nil {
+		return args.Get(0).(*domain.UserIdentity), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func TestCreateUserIdentity(t *testing.T) {
 	mockRepo := new(MockUserIdentityRepository)
 	usecase := NewUserIdentityUsecase(mockRepo)
 
-	input := dto.CreateUserIdentityRequest{
-		UserID:      2,
-		Number:      "123456789",
-		Type:        "Citizen ID",
-		Status:      0,
-		ExpiryDate:  "12-12-2025",
-		PlaceIssued: "Some city",
+	req := dto.CreateUserIdentityRequest{
+		UserID:      1,
+		Number:      "0987123456",
+		Type:        " Citizen ID",
+		Status:      01,
+		ExpiryDate:  "2025-01-01",
+		PlaceIssued: "City X",
 	}
 
-	mockRepo.On("CreateUserIdentity", mock.Anything).Return(nil)
+	expiryDate, _ := time.Parse("2006-01-02", req.ExpiryDate)
+	identity := &domain.UserIdentity{
+		UserID:      req.UserID,
+		Number:      req.Number,
+		Type:        req.Type,
+		Status:      req.Status,
+		ExpiryDate:  expiryDate,
+		PlaceIssued: req.PlaceIssued,
+	}
 
-	err := usecase.CreateUserIdentity(input)
+	mockRepo.On("CreateUserIdentity", identity).Return(nil)
+
+	err := usecase.CreateUserIdentity(req)
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
@@ -55,28 +68,30 @@ func TestUpdateUserIdentity(t *testing.T) {
 	mockRepo := new(MockUserIdentityRepository)
 	usecase := NewUserIdentityUsecase(mockRepo)
 
-	input := dto.UpdateUserIdentityRequest{
-		UserID:      2,
-		Number:      "123555789",
-		Type:        "Passport",
-		Status:      0,
-		ExpiryDate:  "12-12-2028",
-		PlaceIssued: "Some city",
-	}
-	userIdentity := &domain.UserIdentity{
-		ID:          1,
-		UserID:      2,
-		Number:      "123456987",
-		Type:        "Citizen ID",
-		Status:      0,
-		ExpiryDate:  time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
-		PlaceIssued: "Some city",
+	req := dto.UpdateUserIdentityRequest{
+		UserID:      1,
+		Number:      "654321",
+		Type:        "ID",
+		Status:      01,
+		ExpiryDate:  "2026-01-01",
+		PlaceIssued: "City Y",
 	}
 
-	mockRepo.On("FindUserIdentityByID", 1).Return(userIdentity, nil)
-	mockRepo.On("UpdateUserIdentity", userIdentity).Return(nil)
+	id := 1
+	expiryDate, _ := time.Parse("2006-01-02", req.ExpiryDate)
+	identity := &domain.UserIdentity{
+		ID:          id,
+		UserID:      req.UserID,
+		Number:      req.Number,
+		Type:        req.Type,
+		Status:      req.Status,
+		ExpiryDate:  expiryDate,
+		PlaceIssued: req.PlaceIssued,
+	}
 
-	err := usecase.UpdateUserIdentity(1, input)
+	mockRepo.On("UpdateUserIdentity", identity).Return(nil)
+
+	err := usecase.UpdateUserIdentity(id, req)
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
@@ -86,30 +101,33 @@ func TestFindUserIdentityByID(t *testing.T) {
 	mockRepo := new(MockUserIdentityRepository)
 	usecase := NewUserIdentityUsecase(mockRepo)
 
-	userIdentity := &domain.UserIdentity{
-		ID:          1,
+	id := 1
+	identity := &domain.UserIdentity{
+		ID:          id,
 		UserID:      2,
-		Number:      "123456987",
-		Type:        "Citizen ID",
-		Status:      0,
-		ExpiryDate:  time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
-		PlaceIssued: "Some city",
+		Number:      "789123",
+		Type:        "Passport",
+		Status:      01,
+		ExpiryDate:  time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
+		PlaceIssued: "City Z",
 	}
 
-	mockRepo.On("FindUserIdentityByID", 1).Return(userIdentity, nil)
+	response := &dto.UserIdentityResponse{
+		ID:          identity.ID,
+		UserID:      identity.UserID,
+		Number:      identity.Number,
+		Type:        identity.Type,
+		Status:      identity.Status,
+		ExpiryDate:  "2027-01-01",
+		PlaceIssued: identity.PlaceIssued,
+	}
 
-	result, err := usecase.FindUserIdentityByID(1)
+	mockRepo.On("FindUserIdentityByID", id).Return(identity, nil)
+
+	result, err := usecase.FindUserIdentityByID(id)
 
 	assert.NoError(t, err)
-	assert.Equal(t, &dto.UserIdentityResponse{
-		ID:          1,
-		UserID:      2,
-		Number:      "123456987",
-		Type:        "Citizen ID",
-		Status:      0,
-		ExpiryDate:  "2025-12-12 00:00:00 +0000 UTC",
-		PlaceIssued: "Some city",
-	}, result)
+	assert.Equal(t, response, result)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -117,9 +135,10 @@ func TestFindUserIdentityByID_NotFound(t *testing.T) {
 	mockRepo := new(MockUserIdentityRepository)
 	usecase := NewUserIdentityUsecase(mockRepo)
 
-	mockRepo.On("FindUserIdentityByID", 1).Return(nil, errors.New("record not found"))
+	id := 999
+	mockRepo.On("FindUserIdentityByID", id).Return(nil, errors.New("record not found"))
 
-	result, err := usecase.FindUserIdentityByID(1)
+	result, err := usecase.FindUserIdentityByID(id)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)

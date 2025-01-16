@@ -10,3 +10,7 @@ type VolunteerRequest struct {
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
+
+func (VolunteerRequest) TableName() string {
+	return "requests"
+}

@@ -21,10 +21,14 @@ func (m *MockCountryRepository) Create(country *domain.Country) error {
 	return args.Error(0)
 }
 
-// GetByID is a mock method for getting a country by ID.
+// GetCountryByID is a mock method for getting a country by ID.
 func (m *MockCountryRepository) GetByID(id uint) (*domain.Country, error) {
 	args := m.Called(id)
-	return args.Get(0).(*domain.Country), args.Error(1)
+	country, ok := args.Get(0).(*domain.Country)
+	if !ok {
+		return nil, args.Error(1)
+	}
+	return country, args.Error(1)
 }
 
 // Update is a mock method for updating a country.
@@ -41,10 +45,12 @@ func (m *MockCountryRepository) Delete(id uint) error {
 
 func TestCreateCountry(t *testing.T) {
 	mockRepo := new(MockCountryRepository)
+	mockRepo.ExpectedCalls = nil
 	usecase := NewCountryUsecase(mockRepo)
 
 	input := dto.CountryCreateDTO{
-		Name: "TestCountry",
+		Name:   "TestCountry",
+		Status: 1,
 	}
 
 	expectedCountry := &domain.Country{
@@ -52,7 +58,9 @@ func TestCreateCountry(t *testing.T) {
 		Status: input.Status,
 	}
 
-	mockRepo.On("Create", expectedCountry).Return(nil)
+	mockRepo.On("Create", mock.MatchedBy(func(country *domain.Country) bool {
+		return country.Name == expectedCountry.Name && country.Status == expectedCountry.Status
+	})).Return(nil)
 
 	err := usecase.CreateCountry(input)
 
@@ -63,36 +71,44 @@ func TestCreateCountry(t *testing.T) {
 func TestGetCountryByID(t *testing.T) {
 	mockRepo := new(MockCountryRepository)
 	usecase := NewCountryUsecase(mockRepo)
-
-	expectedCountry := &domain.Country{
-		Id:   1,
-		Name: "TestCountry",
+	expectedCountryDomain := &domain.Country{
+		Name:   "TestCountry",
+		Status: 1,
 	}
 
-	mockRepo.On("GetByID", uint(1)).Return(expectedCountry, nil)
+	expectedCountryDTO := &dto.CountryCreateDTO{
+		Name:   "TestCountry",
+		Status: 1,
+	}
+
+	mockRepo.On("GetByID", uint(1)).Return(expectedCountryDomain, nil)
 
 	country, err := usecase.GetCountryByID(1)
 
-	assert.NoError(t, err)
-	assert.Equal(t, expectedCountry, country)
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, expectedCountryDTO.Name, country.Name, "Expected country name to match")
+	assert.Equal(t, expectedCountryDTO.Status, country.Status, "Expected country status to match")
+
 	mockRepo.AssertExpectations(t)
 }
-
 func TestUpdateCountry(t *testing.T) {
 	mockRepo := new(MockCountryRepository)
+	mockRepo.ExpectedCalls = nil
 	usecase := NewCountryUsecase(mockRepo)
 
 	input := dto.CountryUpdateDTO{
-		Name: "UpdatedCountry",
+		Name:   "UpdatedCountry",
+		Status: 2,
 	}
 
 	existingCountry := &domain.Country{
-		Id:   1,
-		Name: "TestCountry",
+		ID:     1,
+		Name:   "TestCountry",
+		Status: 1,
 	}
 
 	updatedCountry := &domain.Country{
-		Id:     1,
+		ID:     1,
 		Name:   input.Name,
 		Status: input.Status,
 	}
@@ -107,6 +123,7 @@ func TestUpdateCountry(t *testing.T) {
 
 func TestDeleteCountry(t *testing.T) {
 	mockRepo := new(MockCountryRepository)
+	mockRepo.ExpectedCalls = nil
 	usecase := NewCountryUsecase(mockRepo)
 
 	mockRepo.On("Delete", uint(1)).Return(nil)
@@ -119,6 +136,7 @@ func TestDeleteCountry(t *testing.T) {
 
 func TestGetCountryByID_NotFound(t *testing.T) {
 	mockRepo := new(MockCountryRepository)
+	mockRepo.ExpectedCalls = nil
 	usecase := NewCountryUsecase(mockRepo)
 
 	mockRepo.On("GetByID", uint(1)).Return(nil, errors.New("not found"))

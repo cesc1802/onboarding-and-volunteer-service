@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/country/domain"
@@ -16,9 +18,12 @@ func setupMockDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 		return nil, nil, err
 	}
 	dialector := mysql.New(mysql.Config{
-		Conn: db,
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
 	})
-	gormDB, err := gorm.Open(dialector, &gorm.Config{})
+	gormDB, err := gorm.Open(dialector, &gorm.Config{
+		DisableAutomaticPing: true,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,12 +43,13 @@ func TestCountryRepository_Create(t *testing.T) {
 	repo := NewCountryRepository(gormDB)
 
 	country := &domain.Country{
-		Name: "Test Country",
+		Name:   "Test Country",
+		Status: 0,
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`INSERT INTO countries`).
-		WithArgs(sqlmock.AnyArg(), country.Name).
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `countries` (`name`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?)")).
+		WithArgs(country.Name, country.Status, sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -66,15 +72,16 @@ func TestCountryRepository_GetByID(t *testing.T) {
 
 	countryID := uint(1)
 	country := &domain.Country{
-		Id:   countryID,
-		Name: "Test Country",
+		ID:     countryID,
+		Name:   "Test Country",
+		Status: 1,
 	}
 
-	rows := sqlmock.NewRows([]string{"id", "name"}).
-		AddRow(country.Id, country.Name)
+	rows := sqlmock.NewRows([]string{"id", "name", "status"}).
+		AddRow(country.ID, country.Name, country.Status)
 
-	mock.ExpectQuery(`SELECT \* FROM countries WHERE id = \?`).
-		WithArgs(countryID).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `countries` WHERE `countries`.`id` = ? ORDER BY `countries`.`id` LIMIT ?")).
+		WithArgs(countryID, 1).
 		WillReturnRows(rows)
 
 	result, err := repo.GetByID(countryID)
@@ -96,17 +103,21 @@ func TestCountryRepository_Update(t *testing.T) {
 	repo := NewCountryRepository(gormDB)
 
 	country := &domain.Country{
-		Id:   1,
-		Name: "Updated Country",
+		ID:        1,
+		Name:      "Updated Country",
+		Status:    1,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`UPDATE countries SET name = \?, code = \? WHERE id = \?`).
-		WithArgs(country.Name, country.Id).
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `countries` SET `name`=?,`status`=?,`created_at`=?,`updated_at`=? WHERE `id` = ?")).
+		WithArgs(country.Name, country.Status, sqlmock.AnyArg(), sqlmock.AnyArg(), country.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	err = repo.Update(country)
+
 	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
@@ -126,7 +137,7 @@ func TestCountryRepository_Delete(t *testing.T) {
 	countryID := uint(1)
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`DELETE FROM countries WHERE id = \?`).
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM `countries` WHERE `countries`.`id` = ?")).
 		WithArgs(countryID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()

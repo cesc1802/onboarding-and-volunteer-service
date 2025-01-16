@@ -16,40 +16,70 @@ func setupMockDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
-	gormDB, err := gorm.Open(mysql.New(mysql.Config{
-		Conn: db,
-	}), &gorm.Config{})
+	dialector := mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	})
+	gormDB, err := gorm.Open(dialector, &gorm.Config{
+		DisableAutomaticPing: true,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
-
 	return gormDB, mock, nil
 }
 
 func TestGetUserByEmail(t *testing.T) {
 	db, mock, err := setupMockDB()
 	assert.NoError(t, err)
-	defer db.DB()
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
 
 	repo := NewAuthenticationRepository(db)
 
 	t.Run("successful retrieval", func(t *testing.T) {
+		// Mock data for user with id, email, password, and status
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
 			AddRow(1, "test@example.com", "password123", 1)
-		mock.ExpectQuery("^SELECT (.+) FROM `users` WHERE email = ? ORDER BY `users`.`id` LIMIT 1$").
-			WithArgs("test@example.com").
+
+		// Expectation: Only 'email' as a query argument
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("test@example.com"). // Only email is passed as argument
 			WillReturnRows(rows)
 
+		// Call the repository method with the correct password
 		user, errMsg := repo.GetUserByEmail("test@example.com", "password123")
-		assert.Empty(t, errMsg)
-		assert.NotNil(t, user)
+
+		// Assertions
+		assert.Empty(t, errMsg) // No error message expected
+		assert.NotNil(t, user)  // Ensure user is not nil
 		assert.Equal(t, "test@example.com", user.Email)
+		assert.Equal(t, "password123", user.Password)
+	})
+
+	t.Run("incorrect password", func(t *testing.T) {
+		// Mock data for user with id, email, password, and status
+		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
+			AddRow(1, "test@example.com", "password123", 1)
+
+		// Expectation: Only 'email' as a query argument
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("test@example.com"). // Only email is passed as argument
+			WillReturnRows(rows)
+
+		// Call the repository method with an incorrect password
+		user, errMsg := repo.GetUserByEmail("test@example.com", "wrongpassword")
+
+		// Assertions
+		assert.Equal(t, "Password is incorrect", errMsg) // Expect error message for incorrect password
+		assert.Nil(t, user)                              // User should be nil due to incorrect password
 	})
 
 	t.Run("user not found", func(t *testing.T) {
-		mock.ExpectQuery("^SELECT (.+) FROM `users` WHERE email = ? ORDER BY `users`.`id` LIMIT 1$").
-			WithArgs("unknown@example.com").
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("unknown@example.com", 1).
 			WillReturnError(gorm.ErrRecordNotFound)
 
 		user, errMsg := repo.GetUserByEmail("unknown@example.com", "password123")
@@ -59,9 +89,9 @@ func TestGetUserByEmail(t *testing.T) {
 
 	t.Run("inactive user", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
-			AddRow(1, "inactive@example.com", "password123", 0)
-		mock.ExpectQuery("^SELECT (.+) FROM `users` WHERE email = ? ORDER BY `users`.`id` LIMIT 1$").
-			WithArgs("inactive@example.com").
+			AddRow(2, "inactive@example.com", "password123", 0)
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("inactive@example.com", 1).
 			WillReturnRows(rows)
 
 		user, errMsg := repo.GetUserByEmail("inactive@example.com", "password123")
@@ -72,8 +102,8 @@ func TestGetUserByEmail(t *testing.T) {
 	t.Run("incorrect password", func(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
 			AddRow(1, "test@example.com", "password123", 1)
-		mock.ExpectQuery("^SELECT (.+) FROM `users` WHERE email = ? ORDER BY `users`.`id` LIMIT 1$").
-			WithArgs("test@example.com").
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("test@example.com", 1).
 			WillReturnRows(rows)
 
 		user, errMsg := repo.GetUserByEmail("test@example.com", "wrongpassword")

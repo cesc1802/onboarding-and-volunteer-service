@@ -41,11 +41,13 @@ func TestUserUsecase_Login(t *testing.T) {
 		Email:    "test@example.com",
 		Password: "password",
 	}
+	roleId := 456
 	mockUser := domain.User{
 		ID:     123,
-		RoleID: 456,
+		RoleID: &roleId,
 	}
-	mockRepo.On("GetUserByEmail", req.Email, req.Password).Return(mockUser, "")
+	// Use a pointer to mockUser
+	mockRepo.On("GetUserByEmail", req.Email, req.Password).Return(&mockUser, "")
 
 	resp, msg := usecase.Login(req)
 
@@ -59,9 +61,17 @@ func TestUserUsecase_Login(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, mockUser.ID, claims["userId"])
-	assert.Equal(t, mockUser.RoleID, claims["roleId"])
-	assert.True(t, claims.VerifyExpiresAt(time.Now().Add(time.Hour*72).Unix(), true))
+	assert.Equal(t, float64(mockUser.ID), claims["userId"])
+	if mockUser.RoleID != nil {
+		assert.Equal(t, float64(*mockUser.RoleID), claims["roleId"])
+	} else {
+		t.Error("RoleID should not be nil")
+	}
+	// Validate the 'exp' claim
+	expiration, ok := claims["exp"].(float64)
+	assert.True(t, ok, "Token should have a valid 'exp' claim")
+	assert.GreaterOrEqual(t, int64(expiration), time.Now().Unix(), "Expiration time should be in the future")
+
 }
 
 func TestUserUsecase_RegisterUser(t *testing.T) {

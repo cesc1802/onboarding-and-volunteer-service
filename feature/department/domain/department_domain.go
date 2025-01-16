@@ -6,7 +6,7 @@ import (
 
 // Department struct that interacts with databases (GORM)
 type Department struct {
-	Id        uint      `gorm:"primaryKey" json:"id"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:255;not null;unique" json:"name"`
 	Address   string    `json:"location"`
 	Status    uint      `gorm:"not null" json:"status"`

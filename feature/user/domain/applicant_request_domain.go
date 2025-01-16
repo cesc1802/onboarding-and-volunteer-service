@@ -10,3 +10,7 @@ type ApplicantRequestDomain struct {
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
+
+func (ApplicantRequestDomain) TableName() string {
+	return "requests"
+}

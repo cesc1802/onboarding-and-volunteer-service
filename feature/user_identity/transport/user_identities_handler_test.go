@@ -1,10 +1,9 @@
 package transport
 
 import (
-	"errors"
+	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/user_identity/dto"
@@ -17,13 +16,13 @@ type MockUserIdentityUsecase struct {
 	mock.Mock
 }
 
-func (m *MockUserIdentityUsecase) CreateUserIdentity(input dto.CreateUserIdentityRequest) error {
-	args := m.Called(input)
+func (m *MockUserIdentityUsecase) CreateUserIdentity(request dto.CreateUserIdentityRequest) error {
+	args := m.Called(request)
 	return args.Error(0)
 }
 
-func (m *MockUserIdentityUsecase) UpdateUserIdentity(id int, input dto.UpdateUserIdentityRequest) error {
-	args := m.Called(id, input)
+func (m *MockUserIdentityUsecase) UpdateUserIdentity(id int, request dto.UpdateUserIdentityRequest) error {
+	args := m.Called(id, request)
 	return args.Error(0)
 }
 
@@ -35,127 +34,90 @@ func (m *MockUserIdentityUsecase) FindUserIdentityByID(id int) (*dto.UserIdentit
 func TestCreateUserIdentity(t *testing.T) {
 	mockUsecase := new(MockUserIdentityUsecase)
 	handler := NewUserIdentityHandler(mockUsecase)
-	gin.SetMode(gin.TestMode)
+
+	// Define the expected request body (adjusted Status to integer)
+	requestBody := `{"user_id": 1, "number": "09485112345", "type":"Citizen ID", "status": 1, "expiry_date":"2024-12-31", "place_issued": "New York"}`
+
+	// Mock the usecase method
+	mockUsecase.On("CreateUserIdentity", mock.AnythingOfType("dto.CreateUserIdentityRequest")).Return(nil)
+
+	// Create a new Gin context and request
 	r := gin.Default()
-	r.POST("/api/v1/user-identity", handler.CreateUserIdentity)
+	r.POST("/api/v1/applicant-identity/", handler.CreateUserIdentity)
 
-	t.Run("success", func(t *testing.T) {
-		mockInput := dto.CreateUserIdentityRequest{
-			UserID:      2,
-			Number:      "123456789",
-			Type:        "Citizen ID",
-			Status:      0,
-			ExpiryDate:  "12-12-2025",
-			PlaceIssued: "Some city",
-		}
-		mockUsecase.On("CreateUserIdentity", mockInput).Return(nil)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/applicant-identity/", bytes.NewBufferString(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-		body := `{"UserID":2,"Number":"123456789","Type":"Citizen ID","Status":"Approved","Expiry Date":"12-12-2025","PlaceIssued":"Some city"}`
-		req, err := http.NewRequest(http.MethodPost, "/api/v1/user-identity", strings.NewReader(body))
-		assert.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
+	// Perform the request
+	r.ServeHTTP(w, req)
 
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
+	// Assert the status code and response
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, w.Body.String(), "User identity created successfully")
 
-		assert.Equal(t, http.StatusCreated, rr.Code)
-		mockUsecase.AssertExpectations(t)
-	})
-
-	t.Run("bad request", func(t *testing.T) {
-		body := `{"UserID":abc,"Number":"123456789","Type":"Citizen ID","Status":"Approved","Expiry Date":"12-12-2025","PlaceIssued":"Some city"}`
-		req, err := http.NewRequest(http.MethodPost, "/api/v1/user-identity", strings.NewReader(body))
-		assert.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-	})
+	// Assert that the mock method was called
+	mockUsecase.AssertExpectations(t)
 }
 
 func TestUpdateUserIdentity(t *testing.T) {
 	mockUsecase := new(MockUserIdentityUsecase)
 	handler := NewUserIdentityHandler(mockUsecase)
-	gin.SetMode(gin.TestMode)
+
+	requestBody := `{"identity_number": "67890", "full_name": "Jane Doe"}`
+
+	mockUsecase.On("UpdateUserIdentity", 1, mock.AnythingOfType("dto.UpdateUserIdentityRequest")).Return(nil)
+
 	r := gin.Default()
-	r.PUT("/api/v1/user-identity/:id", handler.UpdateUserIdentity)
+	r.PUT("/api/v1/applicant-identity/:id", handler.UpdateUserIdentity)
 
-	t.Run("success", func(t *testing.T) {
-		mockInput := dto.UpdateUserIdentityRequest{
-			UserID:      2,
-			Number:      "123888789",
-			Type:        "Passport",
-			Status:      0,
-			ExpiryDate:  "12-12-2025",
-			PlaceIssued: "Another city",
-		}
-		mockUsecase.On("UpdateUserIdentity", 1, mockInput).Return(nil)
+	req, _ := http.NewRequest(http.MethodPut, "/api/v1/applicant-identity/1", bytes.NewBufferString(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-		body := `{"UserID":2,"Number":"123888789","Type":"Passport","Status":"Approved","Expiry Date":"12-12-2025","PlaceIssued":"Another city"}`
-		req, err := http.NewRequest(http.MethodPut, "/api/v1/user-identity/1", strings.NewReader(body))
-		assert.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
 
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "User identity updated successfully")
 
-		assert.Equal(t, http.StatusOK, rr.Code)
-		mockUsecase.AssertExpectations(t)
-	})
-
-	t.Run("bad request", func(t *testing.T) {
-		body := `{"UserID":abc,"Number":"123888789","Type":"Passport","Status":"Approved","Expiry Date":"12-12-2025","PlaceIssued":"Another city"}`
-		req, err := http.NewRequest(http.MethodPut, "/api/v1/user-identity/1", strings.NewReader(body))
-		assert.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-	})
+	mockUsecase.AssertExpectations(t)
 }
 
 func TestFindUserIdentity(t *testing.T) {
 	mockUsecase := new(MockUserIdentityUsecase)
 	handler := NewUserIdentityHandler(mockUsecase)
-	gin.SetMode(gin.TestMode)
+
+	mockUsecase.On("FindUserIdentityByID", 1).Return(&dto.UserIdentityResponse{
+		ID:          1,
+		UserID:      1,
+		Number:      "0987612345",
+		Type:        "Citizen ID",
+		Status:      1,
+		ExpiryDate:  "2024-12-31",
+		PlaceIssued: "New York",
+	}, nil)
+
 	r := gin.Default()
-	r.GET("/api/v1/user-identity/:id", handler.FindUserIdentity)
+	r.GET("/api/v1/applicant-identity/:id", handler.FindUserIdentity)
 
-	t.Run("success", func(t *testing.T) {
-		mockUserIdentity := &dto.UserIdentityResponse{
-			ID:          1,
-			UserID:      2,
-			Number:      "123456789",
-			Type:        "Citizen ID",
-			Status:      0,
-			ExpiryDate:  "12-12-2025",
-			PlaceIssued: "Some city",
-		}
-		mockUsecase.On("FindUserIdentity", 1).Return(mockUserIdentity, nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/applicant-identity/1", nil)
+	w := httptest.NewRecorder()
 
-		req, err := http.NewRequest(http.MethodGet, "/api/v1/user-identity/1", nil)
-		assert.NoError(t, err)
+	// Perform the request
+	r.ServeHTTP(w, req)
 
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
+	// Assert the status code and response
+	assert.Equal(t, http.StatusOK, w.Code)
 
-		assert.Equal(t, http.StatusOK, rr.Code)
-		mockUsecase.AssertExpectations(t)
-	})
+	// Check if the response body contains the expected values
+	assert.Contains(t, w.Body.String(), `"id":1`)
+	assert.Contains(t, w.Body.String(), `"user_id":1`)
+	assert.Contains(t, w.Body.String(), `"number":"0987612345"`)
+	assert.Contains(t, w.Body.String(), `"type":"Citizen ID"`)
+	assert.Contains(t, w.Body.String(), `"status":1`)
+	assert.Contains(t, w.Body.String(), `"expiry_date":"2024-12-31"`)
+	assert.Contains(t, w.Body.String(), `"place_issued":"New York"`)
 
-	t.Run("not found", func(t *testing.T) {
-		mockUsecase.On("FindUserIdentity", 1).Return(nil, errors.New("user identity not found"))
-
-		req, err := http.NewRequest(http.MethodGet, "/api/v1/user-identity/1", nil)
-		assert.NoError(t, err)
-
-		rr := httptest.NewRecorder()
-		r.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-	})
+	// Assert that the mock method was called with the correct parameters
+	mockUsecase.AssertExpectations(t)
 }

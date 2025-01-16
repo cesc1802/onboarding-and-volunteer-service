@@ -1,40 +1,38 @@
 package storage
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/cesc1802/onboarding-and-volunteer-service/feature/user_identity/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"gorm.io/gorm"
 )
 
-type MockDB struct {
+type MockUserIdentityRepository struct {
 	mock.Mock
-	gorm.DB
 }
 
-func (m *MockDB) Create(value interface{}) *gorm.DB {
-	args := m.Called(value)
-	return args.Get(0).(*gorm.DB)
+func (m *MockUserIdentityRepository) CreateUserIdentity(identity *domain.UserIdentity) error {
+	args := m.Called(identity)
+	return args.Error(0)
 }
 
-func (m *MockDB) Save(value interface{}) *gorm.DB {
-	args := m.Called(value)
-	return args.Get(0).(*gorm.DB)
+func (m *MockUserIdentityRepository) UpdateUserIdentity(identity *domain.UserIdentity) error {
+	args := m.Called(identity)
+	return args.Error(0)
 }
 
-func (m *MockDB) First(dest interface{}, conds ...interface{}) *gorm.DB {
-	args := m.Called(dest, conds)
-	return args.Get(0).(*gorm.DB)
+func (m *MockUserIdentityRepository) FindUserIdentityByID(id int) (*domain.UserIdentity, error) {
+	args := m.Called(id)
+	return args.Get(0).(*domain.UserIdentity), args.Error(1)
 }
 
 func TestCreateUserIdentity(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := NewUserIdentityRepository(&mockDB.DB)
+	mockRepo := new(MockUserIdentityRepository)
 
-	userIdentity := &domain.UserIdentity{
+	identity := &domain.UserIdentity{
 		ID:          1,
 		UserID:      2,
 		Number:      "123456789",
@@ -43,69 +41,69 @@ func TestCreateUserIdentity(t *testing.T) {
 		ExpiryDate:  time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
 		PlaceIssued: "Some city",
 	}
-	mockDB.On("Create", userIdentity).Return(&gorm.DB{Error: nil})
 
-	err := repo.CreateUserIdentity(userIdentity)
+	mockRepo.On("CreateUserIdentity", identity).Return(nil).Once()
+
+	err := mockRepo.CreateUserIdentity(identity)
 
 	assert.NoError(t, err)
-	mockDB.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
 }
 
 func TestUpdateUserIdentity(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := NewUserIdentityRepository(&mockDB.DB)
+	mockRepo := new(MockUserIdentityRepository)
 
-	userIdentity := &domain.UserIdentity{
+	identity := &domain.UserIdentity{
 		ID:          1,
 		UserID:      2,
-		Number:      "123456987",
+		Number:      "010293984",
 		Type:        "Citizen ID",
 		Status:      0,
 		ExpiryDate:  time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
 		PlaceIssued: "Some city",
 	}
-	mockDB.On("Save", userIdentity).Return(&gorm.DB{Error: nil})
 
-	err := repo.UpdateUserIdentity(userIdentity)
+	mockRepo.On("UpdateUserIdentity", identity).Return(nil).Once()
+
+	err := mockRepo.UpdateUserIdentity(identity)
 
 	assert.NoError(t, err)
-	mockDB.AssertExpectations(t)
+	mockRepo.AssertExpectations(t)
 }
 
 func TestFindUserIdentityByID(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := NewUserIdentityRepository(&mockDB.DB)
+	mockRepo := new(MockUserIdentityRepository)
 
-	userIdentity := &domain.UserIdentity{
+	identity := &domain.UserIdentity{
 		ID:          1,
 		UserID:      2,
-		Number:      "123456987",
+		Number:      "123456789",
 		Type:        "Citizen ID",
 		Status:      0,
 		ExpiryDate:  time.Date(2025, 12, 12, 0, 0, 0, 0, time.UTC),
 		PlaceIssued: "Some city",
 	}
-	mockDB.On("First", &userIdentity, 1).Return(&gorm.DB{Error: nil}).Run(func(args mock.Arguments) {
-		arg := args.Get(0).(**domain.UserIdentity)
-		*arg = userIdentity
-	})
 
-	result, err := repo.FindUserIdentityByID(1)
+	mockRepo.On("FindUserIdentityByID", 1).Return(identity, nil).Once()
+
+	result, err := mockRepo.FindUserIdentityByID(1)
 
 	assert.NoError(t, err)
-	assert.Equal(t, userIdentity, result)
-	mockDB.AssertExpectations(t)
+	assert.NotNil(t, result)
+	assert.Equal(t, identity.ID, result.ID)
+	mockRepo.AssertExpectations(t)
 }
 
 func TestFindUserIdentityByID_NotFound(t *testing.T) {
-	mockDB := new(MockDB)
-	repo := NewUserIdentityRepository(&mockDB.DB)
+	mockRepo := new(MockUserIdentityRepository)
 
-	mockDB.On("First", mock.Anything, 1).Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+	mockRepo.On("FindUserIdentityByID", 1).Return((*domain.UserIdentity)(nil), errors.New("user identity not found")).Once()
 
-	result, err := repo.FindUserIdentityByID(1)
+	result, err := mockRepo.FindUserIdentityByID(1)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	mockDB.AssertExpectations(t)
+	assert.Equal(t, "user identity not found", err.Error())
+
+	mockRepo.AssertExpectations(t)
 }

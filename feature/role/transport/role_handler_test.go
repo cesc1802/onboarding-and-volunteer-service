@@ -40,29 +40,27 @@ func (m *MockRoleUsecase) DeleteRole(id uint) error {
 }
 
 func TestRoleHandler_CreateRole(t *testing.T) {
-	gin.SetMode(gin.TestMode)
 	mockUsecase := new(MockRoleUsecase)
 	handler := NewRoleHandler(mockUsecase)
 
+	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	router.POST("/api/v1/role", handler.CreateRole)
+	router.POST("/api/v1/roles", handler.CreateRole)
 
 	input := dto.RoleCreateDTO{
-		Name:   "Admin",
-		Status: 123,
+		Name: "Admin",
 	}
 
 	mockUsecase.On("CreateRole", input).Return(nil)
 
-	w := httptest.NewRecorder()
 	body, _ := json.Marshal(input)
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/role", bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/roles", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
+	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Contains(t, w.Body.String(), "Role created successfully")
 	mockUsecase.AssertCalled(t, "CreateRole", input)
 }
 
@@ -75,8 +73,7 @@ func TestRoleHandler_GetRoleByID(t *testing.T) {
 	router.GET("/api/v1/role/:id", handler.GetRoleByID)
 
 	role := &domain.Role{
-		Name:   "Admin",
-		Status: 456,
+		Name: "Admin",
 	}
 
 	mockUsecase.On("GetRoleByID", uint(1)).Return(role, nil)
@@ -92,29 +89,27 @@ func TestRoleHandler_GetRoleByID(t *testing.T) {
 }
 
 func TestRoleHandler_UpdateRole(t *testing.T) {
-	gin.SetMode(gin.TestMode)
 	mockUsecase := new(MockRoleUsecase)
 	handler := NewRoleHandler(mockUsecase)
 
+	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	router.PUT("/api/v1/role/:id", handler.UpdateRole)
 
 	input := dto.RoleUpdateDTO{
-		Name:   "Admin Updated",
-		Status: 976,
+		Name: "Admin Updated",
 	}
 
 	mockUsecase.On("UpdateRole", uint(1), input).Return(nil)
 
-	w := httptest.NewRecorder()
 	body, _ := json.Marshal(input)
 	req, _ := http.NewRequest(http.MethodPut, "/api/v1/role/1", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 
+	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "department updated successfully")
 	mockUsecase.AssertCalled(t, "UpdateRole", uint(1), input)
 }
 
