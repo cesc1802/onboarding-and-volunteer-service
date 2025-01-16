@@ -30,31 +30,53 @@ func setupMockDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 	}
 	return gormDB, mock, nil
 }
+
 func TestCreateVolunteer(t *testing.T) {
 	gormDB, mock, err := setupMockDB()
 	if err != nil {
 		t.Fatalf("failed to setup mock db: %v", err)
 	}
+	// Ensure to close the db connection after test completes
 	defer func() {
 		sqlDB, _ := gormDB.DB()
 		sqlDB.Close()
 	}()
 
 	repo := NewVolunteerRepository(gormDB)
+
+	// Volunteer instance with foreign key relationships
 	volunteer := &domain.Volunteer{
-		UserID:       101,
-		DepartmentID: 10,
-		Status:       01,
+		UserID:             101,
+		DepartmentID:       new(int), // Assuming this is an existing department with ID 1
+		Status:             1,
+		Dob:                time.Now(),
+		Mobile:             "1234567890",
+		CountryID:          new(int), // Assuming this is an existing country with ID 1
+		ResidentCountryID:  nil,      // Optional, assuming it can be nil
+		Avatar:             "",
+		VerificationStatus: 0,
 	}
 
+	// Setting foreign key values
+	*volunteer.DepartmentID = 1 // Simulating the Department ID as 1
+	*volunteer.CountryID = 1    // Simulating the Country ID as 1
+
+	// Mocking the foreign key relationships
 	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `volunteers` (`user_id`,`department_id`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?)")).
-		WithArgs(volunteer.UserID, volunteer.DepartmentID, volunteer.Status, sqlmock.AnyArg(), sqlmock.AnyArg()).
-		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// Here we simulate an insert into the `volunteer_details` table, including the foreign keys
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `volunteer_details` (`user_id`,`department_id`,`dob`,`mobile`,`country_id`,`resident_country_id`,`avatar`,`verification_status`,`status`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")).
+		WithArgs(volunteer.UserID, volunteer.DepartmentID, volunteer.Dob, volunteer.Mobile, volunteer.CountryID, volunteer.ResidentCountryID, volunteer.Avatar, volunteer.VerificationStatus, volunteer.Status, sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // Simulate successful insert with row ID = 1
 	mock.ExpectCommit()
 
+	// Call the method to test
 	err = repo.CreateVolunteer(volunteer)
+
+	// Assert no errors
 	assert.NoError(t, err)
+
+	// Check that all expectations were met
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -65,17 +87,23 @@ func TestUpdateVolunteer(t *testing.T) {
 
 	repo := NewVolunteerRepository(db)
 	volunteer := &domain.Volunteer{
-		ID:           1,
-		UserID:       001,
-		DepartmentID: 010,
-		Status:       123,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:                 1,
+		UserID:             101,
+		DepartmentID:       nil, // assuming it can be nil
+		Status:             1,
+		Dob:                time.Now(),
+		Mobile:             "1234567890",
+		CountryID:          nil, // assuming it can be nil
+		ResidentCountryID:  nil, // assuming it can be nil
+		Avatar:             "",
+		VerificationStatus: 0,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
 	mock.ExpectBegin()
-	mock.ExpectExec(regexp.QuoteMeta("UPDATE `volunteers` SET `user_id`=?,`department_id`=?,`status`=?,`created_at`=?,`updated_at`=? WHERE `id` = ?")).
-		WithArgs(volunteer.UserID, volunteer.DepartmentID, volunteer.Status, sqlmock.AnyArg(), sqlmock.AnyArg(), volunteer.ID).
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `volunteer_details` SET `user_id`=?,`department_id`=?,`dob`=?,`mobile`=?,`country_id`=?,`resident_country_id`=?,`avatar`=?,`verification_status`=?,`status`=?,`created_at`=?,`updated_at`=? WHERE `id` = ?")).
+		WithArgs(volunteer.UserID, volunteer.DepartmentID, volunteer.Dob, volunteer.Mobile, volunteer.CountryID, volunteer.ResidentCountryID, volunteer.Avatar, volunteer.VerificationStatus, volunteer.Status, sqlmock.AnyArg(), sqlmock.AnyArg(), volunteer.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -93,7 +121,7 @@ func TestDeleteVolunteer(t *testing.T) {
 	volunteerID := 1
 
 	mock.ExpectBegin()
-	mock.ExpectExec("DELETE FROM `volunteers` WHERE `volunteers`.`id` = ?").
+	mock.ExpectExec("DELETE FROM `volunteer_details` WHERE `volunteer_details`.`id` = ?").
 		WithArgs(volunteerID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
@@ -114,18 +142,24 @@ func TestFindVolunteerByID(t *testing.T) {
 	repo := NewVolunteerRepository(db)
 	volunteerID := 1
 	volunteer := &domain.Volunteer{
-		ID:           1,
-		UserID:       101,
-		DepartmentID: 10,
-		Status:       123,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		ID:                 1,
+		UserID:             101,
+		DepartmentID:       nil, // assuming it can be nil
+		Status:             1,
+		Dob:                time.Now(),
+		Mobile:             "1234567890",
+		CountryID:          nil, // assuming it can be nil
+		ResidentCountryID:  nil, // assuming it can be nil
+		Avatar:             "",
+		VerificationStatus: 0,
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
 	}
 
-	rows := sqlmock.NewRows([]string{"id", "user_id", "department_id", "status", "created_at", "updated_at"}).
-		AddRow(volunteer.ID, volunteer.UserID, volunteer.DepartmentID, volunteer.Status, volunteer.CreatedAt, volunteer.UpdatedAt)
+	rows := sqlmock.NewRows([]string{"id", "user_id", "department_id", "dob", "mobile", "country_id", "resident_country_id", "avatar", "verification_status", "status", "created_at", "updated_at"}).
+		AddRow(volunteer.ID, volunteer.UserID, volunteer.DepartmentID, volunteer.Dob, volunteer.Mobile, volunteer.CountryID, volunteer.ResidentCountryID, volunteer.Avatar, volunteer.VerificationStatus, volunteer.Status, volunteer.CreatedAt, volunteer.UpdatedAt)
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `volunteers` WHERE `volunteers`.`id` = ? ORDER BY `volunteers`.`id` LIMIT ?")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `volunteer_details` WHERE `volunteer_details`.`id` = ? ORDER BY `volunteer_details`.`id` LIMIT ?")).
 		WithArgs(volunteerID, 1).
 		WillReturnRows(rows)
 

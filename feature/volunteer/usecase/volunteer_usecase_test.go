@@ -62,10 +62,9 @@ func TestUpdateVolunteer(t *testing.T) {
 		Status:       1,
 	}
 	volunteer := &domain.Volunteer{
-		ID:           1,
-		UserID:       1,
-		DepartmentID: 2,
-		Status:       0,
+		ID:     1,
+		UserID: 1,
+		Status: 0,
 	}
 
 	mockRepo.On("FindVolunteerByID", 1).Return(volunteer, nil)
@@ -94,10 +93,9 @@ func TestFindVolunteerByID(t *testing.T) {
 	usecase := NewVolunteerUsecase(mockRepo)
 
 	volunteer := &domain.Volunteer{
-		ID:           1,
-		UserID:       1,
-		DepartmentID: 2,
-		Status:       0,
+		ID:     1,
+		UserID: 1,
+		Status: 0,
 	}
 
 	mockRepo.On("FindVolunteerByID", 1).Return(volunteer, nil)
