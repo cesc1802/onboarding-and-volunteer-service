@@ -40,17 +40,41 @@ func TestGetUserByEmail(t *testing.T) {
 	repo := NewAuthenticationRepository(db)
 
 	t.Run("successful retrieval", func(t *testing.T) {
+		// Mock data for user with id, email, password, and status
 		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
 			AddRow(1, "test@example.com", "password123", 1)
+
+		// Expectation: Only 'email' as a query argument
 		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
-			WithArgs("test@example.com", 1).
+			WithArgs("test@example.com"). // Only email is passed as argument
 			WillReturnRows(rows)
 
+		// Call the repository method with the correct password
 		user, errMsg := repo.GetUserByEmail("test@example.com", "password123")
-		assert.Empty(t, errMsg)
-		assert.NotNil(t, user)
+
+		// Assertions
+		assert.Empty(t, errMsg) // No error message expected
+		assert.NotNil(t, user)  // Ensure user is not nil
 		assert.Equal(t, "test@example.com", user.Email)
 		assert.Equal(t, "password123", user.Password)
+	})
+
+	t.Run("incorrect password", func(t *testing.T) {
+		// Mock data for user with id, email, password, and status
+		rows := sqlmock.NewRows([]string{"id", "email", "password", "status"}).
+			AddRow(1, "test@example.com", "password123", 1)
+
+		// Expectation: Only 'email' as a query argument
+		mock.ExpectQuery("^SELECT \\* FROM `users` WHERE email = \\? ORDER BY `users`.`id` LIMIT \\?$").
+			WithArgs("test@example.com"). // Only email is passed as argument
+			WillReturnRows(rows)
+
+		// Call the repository method with an incorrect password
+		user, errMsg := repo.GetUserByEmail("test@example.com", "wrongpassword")
+
+		// Assertions
+		assert.Equal(t, "Password is incorrect", errMsg) // Expect error message for incorrect password
+		assert.Nil(t, user)                              // User should be nil due to incorrect password
 	})
 
 	t.Run("user not found", func(t *testing.T) {
